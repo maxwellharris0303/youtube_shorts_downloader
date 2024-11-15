@@ -47,8 +47,9 @@ def run_command_1(command):
     return stdout.decode('utf-8')
 
 
-def concurrent_run_instances(thread_count):
-    def perform_task():
+def concurrent_run_instances(thread_count, profiles):
+    def perform_task(profile):
+        print(profile)
         while True:
             with lock:  # Wait up to 10 seconds to acquire the lock:
                 try:
@@ -56,16 +57,18 @@ def concurrent_run_instances(thread_count):
                 except Exception as e:
                     print(Fore.RED + f"ERROR: {str(e)} No link to use in " + Style.RESET_ALL, CSV_FILE_NAME)
             
-            result = thread_main.run_thread(MAIN_DIR, folder_name, yt_link)
+            result = thread_main.run_thread(MAIN_DIR, folder_name, yt_link, profile)
             print(result)
             with lock:
                 manage_csv.update_cell(folder_name)
 
         
 
+    # with ThreadPoolExecutor(max_workers=thread_count) as executor:
+    #     for _ in range(thread_count):
+    #         executor.submit(perform_task)
     with ThreadPoolExecutor(max_workers=thread_count) as executor:
-        for _ in range(thread_count):
-            executor.submit(perform_task)
+        executor.map(perform_task, profiles)
 
 firefox_profiles = [
     "7njcb218.jonyhendritiga@gmail.com",
@@ -87,5 +90,7 @@ thread_number = int(input(Fore.BLUE + "Please enter a number of thread: " + Styl
 print(Fore.GREEN + "You entered the number:" + Style.RESET_ALL, thread_number)
 
 
+firefox_profiles = firefox_profiles[:thread_number]
 
-concurrent_run_instances(thread_number)
+
+concurrent_run_instances(thread_number, firefox_profiles)

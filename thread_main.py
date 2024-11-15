@@ -34,14 +34,14 @@ def get_cmd_pid():
 
 # Loop through each subfolder
 # for folder in os.listdir(MAIN_DIR):
-def run_thread(main_dir, folder_name, yt_link):
+def run_thread(main_dir, folder_name, yt_link, profile):
     folder_path = os.path.join(main_dir, folder_name)
     os.makedirs(folder_path, exist_ok=True)
     if os.path.isdir(folder_path) and folder_name != "background":
 
         # shorts_url = "https://www.youtube.com/@ferryirwandi/shorts"
         with lock:
-            run_command(f"start cmd.exe @cmd /c yt-dlp.exe {yt_link}", directory=folder_path)
+            run_command(f'start cmd.exe @cmd /c yt-dlp.exe --cookies-from-browser firefox:"{profile}" {yt_link}', directory=folder_path)
             PID = get_cmd_pid()
             print(PID)
         # Create the "EDITED WATERMARK" folder if it doesn't exist
