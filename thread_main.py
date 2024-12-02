@@ -4,6 +4,7 @@ import subprocess
 from datetime import datetime, timedelta
 from time import sleep
 import threading
+import ffmpeg
 
 lock = threading.Lock()
 
@@ -34,38 +35,33 @@ def get_cmd_pid():
 
 # Loop through each subfolder
 # for folder in os.listdir(MAIN_DIR):
-def run_thread(main_dir, folder_name, yt_link, profile):
+def run_thread(main_dir, folder_name, index):
     folder_path = os.path.join(main_dir, folder_name)
     os.makedirs(folder_path, exist_ok=True)
     if os.path.isdir(folder_path) and folder_name != "background":
 
-        # shorts_url = "https://www.youtube.com/@ferryirwandi/shorts"
-        with lock:
-            run_command(f'start cmd.exe @cmd /c yt-dlp.exe --cookies-from-browser firefox:"{profile}" {yt_link}', directory=folder_path)
-            PID = get_cmd_pid()
-            print(PID)
+ 
         # Create the "EDITED WATERMARK" folder if it doesn't exist
         edited_folder = os.path.join(folder_path, "EDITED WATERMARK")
         os.makedirs(edited_folder, exist_ok=True)
+
+        # Define the path to the promo video
+        promo_path = "promo.mp4"
 
         # Process each video file (MP4 and WEBM) in the subfolder
         while True:
             # sleep(10)
             sleep(5)
-            parts = run_command_1(f'tasklist /FI "IMAGENAME eq cmd.exe"').split()
-            flag = False
-            for part in parts:
-                if str(PID) in part:
-                    flag = True
-                    break
-            if flag == False and len(os.listdir(folder_path)) < 2:
+            if len(os.listdir(folder_path)) < 2:
                 break
 
             for file_name in os.listdir(folder_path):
                 if file_name.endswith((".mp4", ".webm")):
                     try:
                         file_path = os.path.join(folder_path, file_name)
-                        new_file_name = os.path.join(edited_folder, f"IMG_{random.randint(1000, 9999)}.mp4")
+                        random_file_name = f"IMG_{random.randint(1000, 9999)}.mp4"
+                        new_file_path = os.path.join(folder_path, random_file_name)
+                        final_file_path = os.path.join(edited_folder, random_file_name)
                         
                         # Set random video properties
                         bitrate = 10000 + random.randint(0, 1000)
@@ -100,14 +96,42 @@ def run_thread(main_dir, folder_name, yt_link, profile):
                                 "-metadata:s:a:0", "language=eng",
                                 "-metadata", "encoder=Lavf60.3.100",
                                 "-t", str(total_seconds),
-                                "-y", new_file_name
+                                "-y", new_file_path
                             ]
                             subprocess.run(ffmpeg_command)
 
-                            # Check if the output file exists and is not empty
-                            if os.path.exists(new_file_name) and os.path.getsize(new_file_name) == 0:
-                                print(f"Deleting empty file: {new_file_name}")
-                                os.remove(new_file_name)
+                            while True:
+                                if os.path.exists(new_file_path) and os.path.getsize(new_file_path) > 0:
+                                    break
+                                sleep(1)
+
+                            if os.path.exists(new_file_path) and os.path.getsize(new_file_path) > 0:
+                                def concatenate_videos_reencode(input1, input2, output):
+                                    # Re-encode videos to ensure compatibility, then concatenate
+                                    temp1 = f"temp{index}.ts"
+                                    temp2 = f"temp{index}0.ts"
+
+                                    # Convert input videos to MPEG-TS format
+                                    ffmpeg.input(input1).output(temp1, format="mpegts", vcodec="libx264", acodec="aac").run()
+                                    ffmpeg.input(input2).output(temp2, format="mpegts", vcodec="libx264", acodec="aac").run()
+
+                                    # Concatenate the .ts files
+                                    ffmpeg.input(f"concat:{temp1}|{temp2}", format="mpegts").output(output, vcodec="copy", acodec="copy").run()
+
+                                    print(f"Concatenated video saved as {output}")
+
+                                    os.remove(temp1)
+                                    os.remove(temp2)
+
+                                # Example usage
+                                concatenate_videos_reencode(new_file_path, "promo.mp4", final_file_path)
+
+                                # Cleanup intermediate files
+                                if os.path.exists(final_file_path) and os.path.getsize(final_file_path) > 0:
+                                    os.remove(new_file_path)
+                            else:
+                                print(f"Deleting empty file: {new_file_path}")
+                                os.remove(new_file_path)
                             if os.path.exists(file_path) and os.path.getsize(file_path) != 0:
                                 print(f"Deleting origin file: {file_path}")
                                 os.remove(file_path)

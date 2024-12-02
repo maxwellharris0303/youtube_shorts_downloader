@@ -35,7 +35,7 @@ def get_folder_and_link():
         df.to_csv(csv_file_path, index=False)
         # print("Status updated and saved back to CSV.")
 
-        return first_row['Folder name'], first_row['YT link']
+        return first_row['Folder name']
     else:
         print("No rows with NaN status were found.")
 

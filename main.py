@@ -12,7 +12,7 @@ import manage_csv
 import thread_main
 
 # Set main directory path
-MAIN_DIR = r"D:\EDIT VIDEO"
+MAIN_DIR = r"D:\VIDEOS"
 
 
 # Check if directory exists, exit if not found
@@ -47,17 +47,19 @@ def run_command_1(command):
     return stdout.decode('utf-8')
 
 
-def concurrent_run_instances(thread_count, profiles):
-    def perform_task(profile):
+def concurrent_run_instances(thread_count, profiles, index_list):
+    def perform_task(profile, index):
         print(profile)
+        print(index)
         while True:
             with lock:  # Wait up to 10 seconds to acquire the lock:
                 try:
-                    folder_name, yt_link = manage_csv.get_folder_and_link()
+                    folder_name = manage_csv.get_folder_and_link()
                 except Exception as e:
                     print(Fore.RED + f"ERROR: {str(e)} No link to use in " + Style.RESET_ALL, CSV_FILE_NAME)
+                    break
             
-            result = thread_main.run_thread(MAIN_DIR, folder_name, yt_link, profile)
+            result = thread_main.run_thread(MAIN_DIR, folder_name, index)
             print(result)
             with lock:
                 manage_csv.update_cell(folder_name)
@@ -68,7 +70,7 @@ def concurrent_run_instances(thread_count, profiles):
     #     for _ in range(thread_count):
     #         executor.submit(perform_task)
     with ThreadPoolExecutor(max_workers=thread_count) as executor:
-        executor.map(perform_task, profiles)
+        executor.map(perform_task, profiles, index_list)
 
 firefox_profiles = [
     "7njcb218.jonyhendritiga@gmail.com",
@@ -83,6 +85,19 @@ firefox_profiles = [
     "xhr55g3n.mapan77.official@gmail.com",
     ]
 
+index_list = [
+    "0"
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9"
+]
+
 # Initialize colorama
 init()
 
@@ -93,4 +108,4 @@ print(Fore.GREEN + "You entered the number:" + Style.RESET_ALL, thread_number)
 firefox_profiles = firefox_profiles[:thread_number]
 
 
-concurrent_run_instances(thread_number, firefox_profiles)
+concurrent_run_instances(thread_number, firefox_profiles, index_list)
